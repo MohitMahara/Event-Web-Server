@@ -22,7 +22,7 @@ npm run server    # Run the backend server
 
 Create a `.env` file in the root of the `server` directory and add:
 ```
-MONGO_URL=your-mongodb-url
+MONGO_URI=your-mongodb-url
 JWT_SECRET=your-secret-key
 PORT=8000
 ```
