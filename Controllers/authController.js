@@ -3,6 +3,7 @@ import UserModel from "../Models/userModel.js"
 import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
 import { client } from "../redisClient.js";
+import userModel from "../Models/userModel.js";
 
 export const registerController = async(req, res, next) =>{
     try {
@@ -148,9 +149,14 @@ export const signUpWithGoogleController = async(req, res, next) =>{
 
 
 
-export const forgetPasswordController = async(req, res, next) => {
+// Forgot Password Controllers
+
+export const generateOtpController = async(req, res, next) => {
     try {
+
         const {email} = req.body;
+
+        if(!email){return res.status(400).send({msg : "Email is required", success : false})}
 
         const user  = await UserModel.findOne({email});
         
@@ -161,20 +167,6 @@ export const forgetPasswordController = async(req, res, next) => {
             })
         }
 
-        res.status(200).send({
-            msg : "User Existed",
-            success : true
-        })
-    } catch (error) {
-      next(error);
-    }
-}
-
-
-
-export const generateOtpController = async(req, res, next) => {
-    try {
-        const {email} = req.body;
 
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
