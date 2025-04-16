@@ -3,14 +3,13 @@ import UserModel from "../Models/userModel.js"
 import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
 import { client } from "../redisClient.js";
-import userModel from "../Models/userModel.js";
 
 export const registerController = async(req, res, next) =>{
     try {
 
-        const {name, email, password, role} = req.body;
+        const {name, email, password} = req.body;
 
-        if(!name || !email || !password || !role){
+        if(!name || !email || !password){
             return res.status(400).send({
                 msg : "All fields are required",
                 success : false
@@ -32,7 +31,6 @@ export const registerController = async(req, res, next) =>{
             name, 
             email,
             password : hashedPassword,
-            role,
             authProvider : "email",
             googleId : null,
             photoURL : null,
@@ -122,7 +120,6 @@ export const signUpWithGoogleController = async(req, res, next) =>{
               email: email,
               photoURL : photo,
               password : null,
-              role : "user",
               googleId : googleId,
               authProvider : "google"
 
