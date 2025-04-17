@@ -1,86 +1,143 @@
 import eventsModel from "../Models/eventsModel.js";
 
-export const addEvent = async (req, res) => {
+export const createEventController = async (req, res, next) => {
   try {
-    const myData = {
-      title: "Tech Innovators Meetup 2025",
-      slug: "tech-innovators-meetup-2025",
-      date: new Date("2025-05-10"),
-      time: "15:00",
-      venue: "Tech Park Auditorium, New Delhi",
-      organizer: "InnovateX Community",
-      category: "technology",
-      description:
-        "Join top innovators, developers, and tech enthusiasts for a day of insightful talks, networking, and exhibitions showcasing the latest in technology.",
-      image: "https://example.com/event-banner.jpg",
-      registeredUsers: [
-        "67ffa682c5d15299c3b74732",
-        "67ffa285c5d15299c3b74728",
-        "67ffa1b3c5d15299c3b74725",
-      ],
-    };
 
-    const newEvent = new eventsModel(myData);
+    const {title, slug, date, time, venue, organizer, category, description, image} = req.body;
 
-    await newEvent.save();
+    // validation 
 
-    const populatedEvent = await eventsModel
-      .findById(newEvent._id)
-      .populate("registeredUsers");
+    if(!title || !slug || !date || !time || !venue || !organizer || !category || !description || !image){
+       return res.status(400).send({
+          success : false,
+          msg : "All fields are required",
+       })
+    }
 
-    // console.log(populatedEvent.registeredUsers);
+    const newEvent = new eventsModel({
+      title,
+      slug,
+      date,
+      time,
+      venue,
+      organizer,
+      category,
+      description,
+      image,
+      registeredUsers: [],
+    }).save();
+
 
     return res.status(200).send({
-      status: 1,
-      message: "addEvent Successfully",
-      myData: populatedEvent,
+      success: true,
+      msg: "Event created Successfully",
     });
 
   } catch (error) {
-    return res.status(400).send({
-      status: 0,
-      message: "addEvent not added..",
-      error: error.message,
-      myData: null,
-    });
+    next(error);
   }
 };
 
-export const findBySlug = async (req,res) => {
-    const targetedEvent = await eventsModel.findById("67ffee4d5a906627b9890b0a").populate("registeredUsers");
 
-    if(targetedEvent){
-        return res.status(200).send({
-            status : 1,
-            "message" : "Event founded by slug !",
-            data : targetedEvent
+
+export const getEventBySlugController = async (req,res, next) => {
+  try{
+
+   const {slug} = req.params;
+
+   const event = await eventsModel.findOne({slug});
+
+
+    if(!event){
+        return res.status(404).send({
+             success : false,
+             msg : "Event not found",
         });
     }
-    else{
-        return res.status(400).send({
-            status : 0,
-            "message" : "Event by specific Slug is not found !",
-            data : null
-        });
-    }
 
+    return res.status(200).send({
+      success : true,
+      msg : "Event found",
+      event
+    });
+
+
+  }catch{
+    next(error);
+  }
 };
 
-export const findAllEvents = async (req,res) => {
-    const allExistingEvents = await eventsModel.find().populate("registeredUsers");
 
-    if(allExistingEvents){
-        return res.status(200).send({
-            status : 1,
-            "message" : "all Event Founded !",
-            data : allExistingEvents
-        });
-    }
-    else{
-        return res.status(200).send({
-            status : 0,
-            "message" : "no Event occuring currently !",
-            data : null
-        });
-    }
+export const getAllEventsController = async (req, res, next ) => {
+  try {
+    const allEvents = await eventsModel.find();
+
+    return res.status(200).send({
+      success : true,
+      msg : "All events fetched successfully",
+      allEvents
+    })
+    
+  } catch (error) {
+    next(error);
+  }
 };
+
+
+
+
+export const eventRegisterController = async (req, res, next) => {
+  try {
+    
+    const eventId = req.params.eventId;
+    const {userId} = req.body;
+
+    // validataion
+
+    if(!userId){
+      return res.status(400).send({
+        success : false, 
+        msg : "User id is required"
+      })
+    }
+
+    const user  = await userModel.findById(userId);
+
+    if(!user){
+      return res.status(404).send({
+        success : false,
+        msg : "User not found"
+      })
+    }
+    
+    const event = await eventsModel.findById(eventId);
+
+    if(!event){
+      return res.status(404).send({
+        success : false,
+        msg : "Event not found"
+      })
+    }
+
+
+    // check if user is already registered for the event
+
+    const isRegistered = event.registeredUsers.includes(userId);
+
+    if(isRegistered){
+      return res.status(400).send({
+        success : false, 
+        msg : "User already registered for this event"
+      })
+    }
+
+    // register user for the event
+
+     await event.registeredUsers.push(user._id).save();
+     await user.allEvents.push(event._id).save();
+
+    
+  } catch (error) {
+    next(error);
+  }
+}

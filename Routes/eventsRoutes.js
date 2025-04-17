@@ -1,10 +1,20 @@
-import express from 'express';
-import {addEvent, findAllEvents, findBySlug} from '../Controllers/eventsController.js';
+import express from "express";
 
-const myRouter = express.Router();
+import {
+  createEventController,
+  getAllEventsController,
+  getEventBySlugController,
+  eventRegisterController
+} from "../Controllers/eventsController.js";
 
-myRouter.post("/addEvent",addEvent);
-myRouter.get("/findBySlug",findBySlug);
-myRouter.get("/findAllEvents",findAllEvents);
+const router = express.Router();
 
-export default myRouter;
+router.post("/create-event", createEventController);
+
+router.get("/get-event/:slug", getEventBySlugController);
+
+router.get("/get-all-events", getAllEventsController);
+
+router.post("/:eventId/register", eventRegisterController);
+
+export default router;
