@@ -27,4 +27,5 @@ router.post("/verify-otp", verifyOtpController);
 
 router.post("/reset-password", resetPasswordController);
 
+
 export default router;

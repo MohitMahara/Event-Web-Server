@@ -4,7 +4,7 @@ const userSchema = new mongoose.Schema(
   {
     name: {
       type: String,
-      trim : true,
+      trim: true,
       required: true,
     },
 
@@ -31,7 +31,14 @@ const userSchema = new mongoose.Schema(
       type: String,
     },
 
-  },{ timestamps: true });
+    allEvents: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "events",
+      },
+    ],
+  },
+  { timestamps: true }
+);
 
-
-  export default mongoose.model("users", userSchema);
+export default mongoose.model("users", userSchema);
