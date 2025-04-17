@@ -1,4 +1,5 @@
 import eventsModel from "../Models/eventsModel.js";
+import userModel from "../Models/userModel.js";
 
 export const createEventController = async (req, res, next) => {
   try {
@@ -133,10 +134,48 @@ export const eventRegisterController = async (req, res, next) => {
 
     // register user for the event
 
-     await event.registeredUsers.push(user._id).save();
-     await user.allEvents.push(event._id).save();
+     event.registeredUsers.push(user._id)
+     await event.save();
+
+     user.allEvents.push(event._id);
+     await user.save();
+
+     return res.status(200).send({
+      success : true,
+      msg : "User registered for the event successfully",
+     })
 
     
+  } catch (error) {
+    next(error);
+  }
+}
+
+
+
+export const getAttendedEventsController = async (req, res, next) => {
+  try {
+     const {userId} = req.params;
+
+    const user = await userModel.findById(userId);
+
+    if(!user){
+      return res.status(404).send({
+        success : false,
+        msg : "User not found"
+      })
+    }
+
+
+     await user.populate("allEvents");
+     const attendedEvents = user.allEvents;
+
+     return res.status(200).send({
+      success : true,
+      msg : "Attended events fetched successfully",
+      attendedEvents
+     })
+
   } catch (error) {
     next(error);
   }
