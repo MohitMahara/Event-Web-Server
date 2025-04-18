@@ -58,6 +58,12 @@ const eventsSchema = new mongoose.Schema(
       trim: true,
     },
 
+    createdBy : {
+        type : mongoose.Schema.Types.ObjectId,
+        ref : "users",
+        required : true
+    },
+
     registeredUsers: [
         {
             type : mongoose.Schema.Types.ObjectId,

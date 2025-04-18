@@ -31,7 +31,14 @@ const userSchema = new mongoose.Schema(
       type: String,
     },
 
-    allEvents: [
+    createdEvents: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "events",
+      },
+    ],
+
+    registeredEvents: [
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "events",
