@@ -190,9 +190,9 @@ export const deleteEvent = async (req, res, next) => {
   }
 
   try {
-    const eventToBeDeleted = await eventsModel.findOneAndDelete({ slug });   //findOneAndDelete
-    const UserDataToBeUpdated = await userModel.findOne({email});
-    
+    const eventToBeDeleted = await eventsModel.findOneAndDelete({ slug });
+    const UserDataToBeUpdated = await userModel.findOne({ email });
+
     if (!eventToBeDeleted) {
       return res.status(400).send({
         status: 0,
@@ -200,25 +200,25 @@ export const deleteEvent = async (req, res, next) => {
       });
     }
 
-    if(!UserDataToBeUpdated){
+    if (!UserDataToBeUpdated) {
       return res.status(400).send({
         status: 0,
         message: "User not found so Deletion is not Possible..",
       });
     }
-    
-    const ID = eventToBeDeleted._id; //us delete krne wale ki ID jisko hume remove krna hai us allEvent wale array jo Userchema mein hai bcz allEvents is the array of ID's not slug that's why us slug ki madad se mene ID leli ab delete krdunga us ID ko allEvents mein se bhi
+
+    const ID = eventToBeDeleted._id; // Get the event ID that needs to be removed from the user's allEvents array
 
     const eventExists = UserDataToBeUpdated.allEvents.some(eventId => eventId.equals(ID));
 
-    if(eventExists){
+    if (eventExists) {
       UserDataToBeUpdated.allEvents.pull(ID);
-      await UserDataToBeUpdated.save();
+      await UserDataToBeUpdated.save(); 
     }
 
     return res.status(200).send({
       status: 1,
-      message: "Event Details Updated Successfully...",
+      message: "Event Details Deleted Successfully...",
     });
   } catch (e) {
     return res.status(400).send({
@@ -227,6 +227,7 @@ export const deleteEvent = async (req, res, next) => {
     });
   }
 };
+
 
 export const updateEvent = async (req, res, next) => {
   const { slug, title, image, description } = req.body;
@@ -250,12 +251,12 @@ export const updateEvent = async (req, res, next) => {
     }
 
     //updating Event
-    eventToBeUpdated.title = title;
-    eventToBeUpdated.image = image;
-    eventToBeUpdated.description = description;
+    targetedEvent.title = title;
+    targetedEvent.image = image;
+    targetedEvent.description = description;
 
     //saving that Updation in DB
-    await eventToBeUpdated.save();
+    await targetedEvent.save();
 
     return res.status(200).send({
       status: 1,
