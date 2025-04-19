@@ -6,8 +6,8 @@ import {
   getEventBySlugController,
   eventRegisterController,
   getAttendedEventsController,
-  deleteEvent,
-  updateEvent
+  deleteEventController,
+  updateEventController
 } from "../Controllers/eventsController.js";
 
 const router = express.Router();
@@ -22,8 +22,8 @@ router.post("/:eventId/register", eventRegisterController);
 
 router.get("/attended-events/:userId", getAttendedEventsController);
 
-router.delete("/DeleteEvent",deleteEvent);     //router.delete() use kiya for deletion baki dekhlio apne hisab se post rakhna kya
+router.delete("/delete-event/:eventId",deleteEventController);
 
-router.put("/UpdateEvent",updateEvent);        //router.put() use kiya for updation baki dekhlio apne hisab se post rakhna kya
+router.put("/update-event/:eventId",updateEventController);  
 
 export default router;

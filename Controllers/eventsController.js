@@ -1,56 +1,93 @@
 import eventsModel from "../Models/eventsModel.js";
 import userModel from "../Models/userModel.js";
+import formidable from "formidable";
+import cloudinary from "../Utils/cloudinary.js";
 
 export const createEventController = async (req, res, next) => {
   try {
-    const {
-      title,
-      slug,
-      date,
-      time,
-      venue,
-      organizer,
-      category,
-      description,
-      image,
-    } = req.body;
 
-    // validation
+    // parsing form data using formidable
+    const form = formidable({ multiples: false });
 
-    if (
-      !title ||
-      !slug ||
-      !date ||
-      !time ||
-      !venue ||
-      !organizer ||
-      !category ||
-      !description ||
-      !image
-    ) {
-      return res.status(400).send({
-        success: false,
-        msg: "All fields are required",
+    form.parse(req, async (err, fields, files) => {
+
+      if (err) {
+        return res.status(400).send({
+          success: false,
+          msg: "Error parsing form data",
+        });
+      }
+
+      try{
+
+      const image = files?.image[0]?.filepath;
+
+
+      const { title,slug,date,time,venue,organizer,category,description,createdBy } = fields;
+
+      // validation
+
+      if ( !title || !slug || !date || !time || !venue || !organizer || !category || !description || !createdBy ) {
+        return res.status(400).send({
+          success: false,
+          msg: "All fields are required",
+        });
+      }
+
+      const user = await userModel.findById(createdBy[0]);
+
+      if(!user){
+        return res.status(400).send({
+           success : false,
+           msg : "User not found"
+        })
+      }
+
+
+      const result = await cloudinary.uploader.upload(image, {
+        folder: "events",
       });
-    }
 
-    const newEvent = new eventsModel({
-      title,
-      slug,
-      date,
-      time,
-      venue,
-      organizer,
-      category,
-      description,
-      image,
-      registeredUsers: [],
-    }).save();
+      const imageURL = result.secure_url;
 
-    return res.status(200).send({
-      success: true,
-      msg: "Event created Successfully",
+      if(!imageURL){
+        return res.status(400).send({
+           success : false,
+            msg : "Image upload failed",
+        })
+      }
+
+      const newEvent = await new eventsModel({
+        title : title[0],
+        slug : slug[0],
+        date : date[0],
+        time : time[0],
+        venue : venue[0],
+        organizer : organizer[0],
+        category : category[0],
+        description : description[0],
+        image: imageURL,
+        createdBy : createdBy[0],
+        registeredUsers: [],
+      }).save();
+
+       user.createdEvents.push(newEvent._id);
+       await user.save(); 
+
+      return res.status(200).send({
+        success: true,
+        msg: "Event created Successfully",
+      });
+
+    }catch(error){
+       return res.status(400).send({
+         success : "false",
+         msg : error.message,
+       })
+     }
+
     });
+
   } catch (error) {
     next(error);
   }
@@ -141,7 +178,7 @@ export const eventRegisterController = async (req, res, next) => {
     event.registeredUsers.push(user._id);
     await event.save();
 
-    user.allEvents.push(event._id);
+    user.registeredEvents.push(event._id);
     await user.save();
 
     return res.status(200).send({
@@ -166,8 +203,8 @@ export const getAttendedEventsController = async (req, res, next) => {
       });
     }
 
-    await user.populate("allEvents");
-    const attendedEvents = user.allEvents;
+    await user.populate("registeredEvents");
+    const attendedEvents = user.registeredEvents;
 
     return res.status(200).send({
       success: true,
@@ -179,93 +216,129 @@ export const getAttendedEventsController = async (req, res, next) => {
   }
 };
 
-export const deleteEvent = async (req, res, next) => {
-  const { slug, email } = req.body;
-
-  if (!slug || !email) {
-    return res.status(400).send({
-      status: 0,
-      message: "Please give Complete Details",
-    });
-  }
-
+export const deleteEventController = async (req, res, next) => {
   try {
-    const eventToBeDeleted = await eventsModel.findOneAndDelete({ slug });
-    const UserDataToBeUpdated = await userModel.findOne({ email });
 
-    if (!eventToBeDeleted) {
+    const eventId = req.params.eventId;
+    const event = await eventsModel.findById(eventId);
+
+    if (!event) {
       return res.status(400).send({
-        status: 0,
-        message: "Event not found so Deletion is not Possible..",
+        success: false,
+        msg: "Event not found so Deletion is not Possible..",
       });
     }
 
-    if (!UserDataToBeUpdated) {
+    await eventsModel.findOneAndDelete({ eventId });
+
+    const user =  await userModel.findById(event.createdBy);
+
+    if (!user) {
       return res.status(400).send({
-        status: 0,
-        message: "User not found so Deletion is not Possible..",
+        success: false,
+        msg : "User not found so Deletion is not Possible..",
       });
     }
 
-    const ID = eventToBeDeleted._id; // Get the event ID that needs to be removed from the user's allEvents array
 
-    const eventExists = UserDataToBeUpdated.allEvents.some(eventId => eventId.equals(ID));
+    const eventExists = user.createdEvents.some(ID => ID.equals(eventId));
 
     if (eventExists) {
-      UserDataToBeUpdated.allEvents.pull(ID);
-      await UserDataToBeUpdated.save(); 
+      user.createdEvents.pull(eventId);
+      await user.save(); 
     }
 
     return res.status(200).send({
-      status: 1,
-      message: "Event Details Deleted Successfully...",
+      success: true,
+      msg: "Event Deleted Successfully...",
     });
-  } catch (e) {
-    return res.status(400).send({
-      status: 0,
-      "error-message": `Event not Deleted due to Server Error ${e.message}`,
-    });
+
+  } catch (error) {
+    next(error);
   }
 };
 
 
-export const updateEvent = async (req, res, next) => {
-  const { slug, title, image, description } = req.body;
-
-  //validation
-  if (!slug || !title || !image || !description) {
-    return res.status(400).send({
-      status: 0,
-      message: "Please give Complete Details",
-    });
-  }
-
+export const updateEventController = async (req, res, next) => {
   try {
-    const eventToBeUpdated = await eventsModel.findOne({ slug });
 
-    if (!eventToBeUpdated) {
-      return res.status(400).send({
-        status: 0,
-        message: "Event not found so Updation is not Possible..",
+      const {eventId} = req.params;
+
+      // parsing form data using formidable
+
+      const form = formidable({ multiples: false });
+
+      form.parse(req, async (err, fields, files) => {
+
+        if (err) {
+          return res.status(400).send({
+            success: false,
+            msg: "Error parsing form data",
+          });
+        }
+      
+      try{
+
+        const {title, description} = fields;
+        const image = files?.image[0]?.filepath;
+
+        //validation
+
+        if (!title || !image || !description) {
+          return res.status(400).send({
+           success : false,
+           msg: "Please give Complete Details",
+          });
+       }
+
+       const event = await eventsModel.findById(eventId);
+
+       if (!event) {
+        return res.status(400).send({
+          success: false,
+          msg : "Event not found so Updation is not Possible..",
+        });
+      }
+
+
+      const result = await cloudinary.uploader.upload(image, {
+        folder: "events",
       });
-    }
 
-    //updating Event
-    targetedEvent.title = title;
-    targetedEvent.image = image;
-    targetedEvent.description = description;
+      const imageURL = result.secure_url;
 
-    //saving that Updation in DB
-    await targetedEvent.save();
+      if(!imageURL){
+        return res.status(400).send({
+           success : false,
+            msg : "Image upload failed",
+        })
+      }
 
-    return res.status(200).send({
-      status: 1,
-      message: "Event Details Updated Successfully...",
-    });
-  } catch (e) {
-    return res.status(400).send({
-      status: 0,
-      "error-message": `Event not Updated due to Server Error ${e.message}`,
-    });
+     //updating Event
+
+      event.title = title[0];
+      event.image = imageURL;
+      event.description = description[0];
+
+      await event.save();
+
+      return res.status(200).send({
+        success: true,
+        msg : "Event Updated Successfully...",
+      });
+
+      
+      }catch(error){
+          return res.status(400).send({
+             success : false,
+             msg : error.message
+          })
+      }
+
+
+      });
+
+  }catch(error) {
+     next(error);
   }
 };

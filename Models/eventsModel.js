@@ -1,5 +1,4 @@
 import mongoose from "mongoose";
-import userModel from "./userModel.js";
 
 const eventsSchema = new mongoose.Schema(
 {
@@ -55,6 +54,7 @@ const eventsSchema = new mongoose.Schema(
 
     image: {
       type: String,
+      required : true,
       trim: true,
     },
 
