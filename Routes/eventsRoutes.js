@@ -7,7 +7,8 @@ import {
   eventRegisterController,
   getAttendedEventsController,
   deleteEventController,
-  updateEventController
+  updateEventController,
+  getOrganizedEventsController
 } from "../Controllers/eventsController.js";
 
 const router = express.Router();
@@ -21,6 +22,9 @@ router.get("/get-all-events", getAllEventsController);
 router.post("/:eventId/register", eventRegisterController);
 
 router.get("/attended-events/:userId", getAttendedEventsController);
+
+router.get("/organized-events/:userId", getOrganizedEventsController);
+
 
 router.delete("/delete-event/:eventId",deleteEventController);
 

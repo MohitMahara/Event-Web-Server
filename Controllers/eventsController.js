@@ -2,6 +2,7 @@ import eventsModel from "../Models/eventsModel.js";
 import userModel from "../Models/userModel.js";
 import formidable from "formidable";
 import cloudinary from "../Utils/cloudinary.js";
+import mongoose from "mongoose";
 
 export const createEventController = async (req, res, next) => {
   try {
@@ -216,11 +217,38 @@ export const getAttendedEventsController = async (req, res, next) => {
   }
 };
 
+
+export const getOrganizedEventsController = async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+
+    const user = await userModel.findById(userId);
+
+    if (!user) {
+      return res.status(404).send({
+        success: false,
+        msg: "User not found",
+      });
+    }
+
+    await user.populate("createdEvents");
+    const organizedEvents = user.createdEvents;
+
+    return res.status(200).send({
+      success: true,
+      msg: "Organized events fetched successfully",
+      organizedEvents,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const deleteEventController = async (req, res, next) => {
   try {
 
     const eventId = req.params.eventId;
-    const event = await eventsModel.findById(eventId);
+    const event = await eventsModel.findById(eventId).populate("registeredUsers");
 
     if (!event) {
       return res.status(400).send({
@@ -229,7 +257,16 @@ export const deleteEventController = async (req, res, next) => {
       });
     }
 
-    await eventsModel.findOneAndDelete({ eventId });
+    await eventsModel.findOneAndDelete({ _id : eventId });
+
+  // removing event from user registered events array
+
+
+    await userModel.updateMany(
+      { _id: { $in: event.registeredUsers } },
+      { $pull: { registeredEvents: eventId } }
+    );
+    
 
     const user =  await userModel.findById(event.createdBy);
 
@@ -240,8 +277,10 @@ export const deleteEventController = async (req, res, next) => {
       });
     }
 
+    // converting eventId  from string to ObjectId;
+    const evtId = new mongoose.Types.ObjectId(eventId);
 
-    const eventExists = user.createdEvents.some(ID => ID.equals(eventId));
+    const eventExists = user.createdEvents.some(ID => ID.equals(evtId));
 
     if (eventExists) {
       user.createdEvents.pull(eventId);
