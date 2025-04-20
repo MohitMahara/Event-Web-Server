@@ -12,7 +12,6 @@ const eventsSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
-      lowercase: true,
     },
 
     date: {
@@ -43,7 +42,6 @@ const eventsSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
-      lowercase: true,
     },
 
     description: {
@@ -56,6 +54,12 @@ const eventsSchema = new mongoose.Schema(
       type: String,
       required : true,
       trim: true,
+    },
+
+    contact : {
+      type : String,
+      required : true,
+      trim : true
     },
 
     createdBy : {

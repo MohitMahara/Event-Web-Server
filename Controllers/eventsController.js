@@ -24,11 +24,11 @@ export const createEventController = async (req, res, next) => {
       const image = files?.image[0]?.filepath;
 
 
-      const { title,slug,date,time,venue,organizer,category,description,createdBy } = fields;
+      const { title,slug,date,time,venue,organizer,category,description,contact, createdBy } = fields;
 
       // validation
 
-      if ( !title || !slug || !date || !time || !venue || !organizer || !category || !description || !createdBy ) {
+      if ( !title || !slug || !date || !time || !venue || !organizer || !category || !description || !createdBy || !contact || !image) {
         return res.status(400).send({
           success: false,
           msg: "All fields are required",
@@ -66,6 +66,7 @@ export const createEventController = async (req, res, next) => {
         venue : venue[0],
         organizer : organizer[0],
         category : category[0],
+        contact : contact[0],
         description : description[0],
         image: imageURL,
         createdBy : createdBy[0],
@@ -318,17 +319,23 @@ export const updateEventController = async (req, res, next) => {
       
       try{
 
-        const {title, description} = fields;
-        const image = files?.image[0]?.filepath;
-
-        //validation
-
-        if (!title || !image || !description) {
-          return res.status(400).send({
-           success : false,
-           msg: "Please give Complete Details",
-          });
+       let image = null;
+       
+       if(files?.image){
+        image = files?.image[0]?.filepath;
        }
+
+        const { title, date,time,venue,organizer,category,description,contact} = fields;
+
+        // validation
+  
+        if ( !title || !date || !time || !venue || !organizer || !category || !description || !contact ) {
+          return res.status(400).send({
+            success: false,
+            msg: "All fields are required",
+          });
+        }
+
 
        const event = await eventsModel.findById(eventId);
 
@@ -339,25 +346,36 @@ export const updateEventController = async (req, res, next) => {
         });
       }
 
+      if(image){
 
-      const result = await cloudinary.uploader.upload(image, {
-        folder: "events",
-      });
+       const result = await cloudinary.uploader.upload(image, {
+          folder: "events",
+       });
 
-      const imageURL = result.secure_url;
+       const imageURL = result.secure_url;
 
-      if(!imageURL){
-        return res.status(400).send({
-           success : false,
-            msg : "Image upload failed",
-        })
+       if(!imageURL){
+          return res.status(400).send({
+            success : false,
+             msg : "Image upload failed",
+         })
+       }
+
+       event.image = imageURL;
+
       }
+
 
      //updating Event
 
       event.title = title[0];
-      event.image = imageURL;
       event.description = description[0];
+      event.contact = contact[0];
+      event.date = date[0];
+      event.time = time[0];
+      event.venue = venue[0];
+      event.organizer = organizer[0];
+      event.category = category[0];
 
       await event.save();
 
