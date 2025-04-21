@@ -8,7 +8,7 @@ This is the backend for the event management application
 
 ### 1️⃣ Clone the Repository
 ```sh
-git https://github.com/MohitMahara/Event-Web-Server.git
+git clone https://github.com/MohitMahara/Event-Web-Server.git
 
 ```
 
